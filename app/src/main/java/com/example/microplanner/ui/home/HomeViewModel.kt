@@ -58,22 +58,22 @@ class HomeViewModel(
     }
 
     fun startTask() {
-        val state = _uiState.value
-        if (state.taskDisplayState is TaskDisplayState.ReadyToStart) {
+        val currentState = _uiState.value.taskDisplayState
+        if (currentState is TaskDisplayState.ReadyToStart) {
             _uiState.update { 
-                it.copy(taskDisplayState = TaskDisplayState.InProgress(state.taskDisplayState.task, System.currentTimeMillis())) 
+                it.copy(taskDisplayState = TaskDisplayState.InProgress(currentState.task, System.currentTimeMillis())) 
             }
         }
     }
 
     fun completeTask() {
         viewModelScope.launch {
-            val state = _uiState.value
-            if (state.taskDisplayState is TaskDisplayState.InProgress) {
+            val currentState = _uiState.value.taskDisplayState
+            if (currentState is TaskDisplayState.InProgress) {
                 val endTime = System.currentTimeMillis()
-                val minutesSpent = ((endTime - state.taskDisplayState.startTime) / 60000).toInt().coerceAtLeast(1)
+                val minutesSpent = ((endTime - currentState.startTime) / 60000).toInt().coerceAtLeast(1)
                 
-                val updatedTask = state.taskDisplayState.task.copy(lastCompletedDate = endTime)
+                val updatedTask = currentState.task.copy(lastCompletedDate = endTime)
                 taskRepository.updateTask(updatedTask)
                 statsRepository.incrementCompleted(minutesSpent)
                 
@@ -98,10 +98,17 @@ class HomeViewModel(
 
     fun markAsIrrelevant() {
         viewModelScope.launch {
-            val state = _uiState.value
-            if (state.taskDisplayState is TaskDisplayState.ReadyToStart || state.taskDisplayState is TaskDisplayState.InProgress) {
-                val taskId = state.taskDisplayState.task.id
-                taskRepository.deactivateTask(taskId)
+            val currentState = _uiState.value.taskDisplayState
+            
+            // Безопасное извлечение задачи через when
+            val taskToDeactivate = when (currentState) {
+                is TaskDisplayState.ReadyToStart -> currentState.task
+                is TaskDisplayState.InProgress -> currentState.task
+                else -> null
+            }
+
+            if (taskToDeactivate != null) {
+                taskRepository.deactivateTask(taskToDeactivate.id)
                 _uiState.update { it.copy(taskDisplayState = TaskDisplayState.Idle) }
             }
         }
