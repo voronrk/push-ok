@@ -27,4 +27,17 @@ class TaskRepository(private val taskDao: TaskDao) {
     suspend fun restorePredefinedTasks() {
         taskDao.restorePredefinedTasks()
     }
+
+    // Добавленные методы для корректной работы ViewModel
+    suspend fun deleteTask(taskId: String) {
+        taskDao.deleteTask(taskId)
+    }
+
+    suspend fun getTaskById(taskId: String): Task? {
+        return taskDao.getTaskById(taskId)
+    }
+
+    suspend fun insertTask(task: Task) {
+        taskDao.insertTask(task)
+    }
 }

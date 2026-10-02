@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,7 +67,7 @@ fun MyTasksScreen(
 
 @Composable
 fun TaskItem(task: Task, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
-    val alpha = if (task.isActive) 1.0f else 0.5f
+    val itemAlpha = if (task.isActive) 1.0f else 0.5f
     val textDecoration = if (task.isActive) null else TextDecoration.LineThrough
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -74,7 +75,7 @@ fun TaskItem(task: Task, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f).alpha(alpha)) {
+            Column(modifier = Modifier.weight(1f).alpha(itemAlpha)) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyLarge,

@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.microplanner.data.AppDatabase
 import com.example.microplanner.data.TaskRepository
@@ -24,7 +25,7 @@ class SettingsViewModel(application: Application) : ViewModel() {
     private val taskRepository = TaskRepository(AppDatabase.getDatabase(application).taskDao())
 
     fun restorePredefinedTasks() {
-        androidx.lifecycle.viewModelScope.launch {
+        viewModelScope.launch {
             taskRepository.restorePredefinedTasks()
         }
     }
@@ -69,7 +70,7 @@ fun SettingsScreen(
                 onClick = { showRestoreDialog = true }
             )
 
-            Divider(modifier = Modifier.padding(vertical = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
             Text("О приложении", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
             Text("MicroPlanner v1.0.0", style = MaterialTheme.typography.bodyMedium)

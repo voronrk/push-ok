@@ -24,7 +24,7 @@ class TasksViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteTask(taskId: String) {
         viewModelScope.launch {
-            taskRepository.taskDao().deleteTask(taskId)
+            taskRepository.deleteTask(taskId)
         }
     }
 
@@ -36,15 +36,13 @@ class TasksViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val task = if (taskId != null) {
-                // Редактирование существующего
-                val existing = taskRepository.taskDao().getTaskById(taskId)
+                val existing = taskRepository.getTaskById(taskId)
                 existing?.copy(
                     title = title,
                     durationType = durationType,
                     periodicityDays = periodicityDays
                 )
             } else {
-                // Создание нового
                 Task(
                     id = UUID.randomUUID().toString(),
                     title = title,
@@ -56,7 +54,7 @@ class TasksViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             if (task != null) {
-                taskRepository.taskDao().insertTask(task)
+                taskRepository.insertTask(task)
             }
         }
     }
