@@ -5,10 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.microplanner.ui.home.HomeScreen
+import androidx.navigation.compose.rememberNavController
+import com.example.microplanner.ui.navigation.AppNavigation
 import com.example.microplanner.ui.theme.MicroPlannerTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,8 +17,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MicroPlannerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeScreen(modifier = Modifier.padding(innerPadding))
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val navController = rememberNavController()
+                    AppNavigation(navController = navController)
                 }
             }
         }

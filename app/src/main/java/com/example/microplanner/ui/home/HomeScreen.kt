@@ -6,6 +6,9 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,41 +23,63 @@ import com.example.microplanner.data.AppStats
 import com.example.microplanner.domain.model.DurationType
 import com.example.microplanner.domain.model.Task
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    // Теперь viewModel() сработает идеально, так как у AndroidViewModel есть стандартный Factory
-    val viewModel: HomeViewModel = viewModel()
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    onNavigateToMyTasks: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Что делать?",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("MicroPlanner", fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = onNavigateToMyTasks) {
+                        Icon(Icons.Default.List, contentDescription = "Мои дела")
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Настройки")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Что делать?",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
 
-        when (val state = uiState.taskDisplayState) {
-            is TaskDisplayState.Idle -> {
-                MainButtons(viewModel)
-                Spacer(modifier = Modifier.height(32.dp))
-                StatsBlock(uiState.stats, uiState.abGroup, context)
-            }
-            is TaskDisplayState.ReadyToStart -> {
-                TaskCardReady(state.task, viewModel, context, uiState.abGroup)
-            }
-            is TaskDisplayState.InProgress -> {
-                TaskCardInProgress(state.task, viewModel)
-            }
-            is TaskDisplayState.Completed -> {
-                TaskCardCompleted(state.minutesSpent, viewModel, context, uiState.abGroup)
+            when (val state = uiState.taskDisplayState) {
+                is TaskDisplayState.Idle -> {
+                    MainButtons(viewModel)
+                    Spacer(modifier = Modifier.height(32.dp))
+                    StatsBlock(uiState.stats, uiState.abGroup, context)
+                }
+                is TaskDisplayState.ReadyToStart -> {
+                    TaskCardReady(state.task, viewModel, context, uiState.abGroup)
+                }
+                is TaskDisplayState.InProgress -> {
+                    TaskCardInProgress(state.task, viewModel)
+                }
+                is TaskDisplayState.Completed -> {
+                    TaskCardCompleted(state.minutesSpent, viewModel, context, uiState.abGroup)
+                }
             }
         }
     }
