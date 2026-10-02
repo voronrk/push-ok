@@ -54,4 +54,8 @@ interface TaskDao {
         LIMIT 1
     """)
     suspend fun getRandomAvailableTask(durationType: String, currentTime: Long): Task?
+
+    // Получить количество дел (для проверки инициализации базы)
+    @Query("SELECT COUNT(*) FROM tasks")
+    suspend fun getTaskCount(): Int
 }
