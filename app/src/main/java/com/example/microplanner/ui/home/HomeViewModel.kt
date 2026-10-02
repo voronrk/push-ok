@@ -1,7 +1,9 @@
 package com.example.microplanner.ui.home
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.microplanner.data.AppDatabase
 import com.example.microplanner.data.AppStats
 import com.example.microplanner.data.StatsRepository
 import com.example.microplanner.data.TaskRepository
@@ -26,10 +28,13 @@ data class HomeUiState(
     val abGroup: String = "A"
 )
 
-class HomeViewModel(
-    private val taskRepository: TaskRepository,
-    private val statsRepository: StatsRepository
-) : ViewModel() {
+// Наследуемся от AndroidViewModel, чтобы получить Application Context
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
+
+    // Создаем репозитории прямо здесь, используя контекст приложения
+    private val database = AppDatabase.getDatabase(application)
+    private val taskRepository = TaskRepository(database.taskDao())
+    private val statsRepository = StatsRepository(application)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -100,7 +105,6 @@ class HomeViewModel(
         viewModelScope.launch {
             val currentState = _uiState.value.taskDisplayState
             
-            // Безопасное извлечение задачи через when
             val taskToDeactivate = when (currentState) {
                 is TaskDisplayState.ReadyToStart -> currentState.task
                 is TaskDisplayState.InProgress -> currentState.task

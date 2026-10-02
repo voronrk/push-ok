@@ -21,10 +21,9 @@ import com.example.microplanner.domain.model.DurationType
 import com.example.microplanner.domain.model.Task
 
 @Composable
-fun HomeScreen(
-    modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = viewModel()
-) {
+fun HomeScreen(modifier: Modifier = Modifier) {
+    // Теперь viewModel() сработает идеально, так как у AndroidViewModel есть стандартный Factory
+    val viewModel: HomeViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
@@ -35,7 +34,6 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Заголовок
         Text(
             text = "Что делать?",
             fontSize = 28.sp,
@@ -43,7 +41,6 @@ fun HomeScreen(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // Основной контент в зависимости от состояния
         when (val state = uiState.taskDisplayState) {
             is TaskDisplayState.Idle -> {
                 MainButtons(viewModel)
