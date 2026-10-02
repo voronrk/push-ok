@@ -20,6 +20,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.microplanner.data.AppDatabase
 import com.example.microplanner.data.TaskRepository
+import kotlinx.coroutines.launch // <-- ВОТ ЭТОГО ИМПОРТА НЕ ХВАТАЛО
 
 class SettingsViewModel(application: Application) : ViewModel() {
     private val taskRepository = TaskRepository(AppDatabase.getDatabase(application).taskDao())
