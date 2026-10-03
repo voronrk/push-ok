@@ -50,11 +50,32 @@ class TasksViewModel(application: Application) : AndroidViewModel(application) {
                     periodicityDays = periodicityDays,
                     isActive = true,
                     isPredefined = false,
-                    lastCompletedDate = null
+                    lastCompletedDate = null,
+                    lastSkippedDate = null
                 )
             }
             if (task != null) {
                 taskRepository.insertTask(task)
+            }
+        }
+    }
+
+    /**
+     * Надёжная загрузка дела по ID напрямую из DAO (минуя Flow).
+     */
+    suspend fun getTaskById(taskId: String): Task? {
+        return taskRepository.getTaskById(taskId)
+    }
+
+    /**
+     * Редактирование стандартного дела: создаёт копию как пользовательское,
+     * деактивирует оригинал и возвращает ID копии через callback.
+     */
+    fun editPredefinedTask(originalTaskId: String, onCopyCreated: (String) -> Unit) {
+        viewModelScope.launch {
+            val copyId = taskRepository.createCopyFromPredefined(originalTaskId)
+            if (copyId != null) {
+                onCopyCreated(copyId)
             }
         }
     }

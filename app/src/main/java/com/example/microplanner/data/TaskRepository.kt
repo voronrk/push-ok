@@ -2,6 +2,7 @@ package com.example.microplanner.data
 
 import com.example.microplanner.domain.model.Task
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 class TaskRepository(private val taskDao: TaskDao) {
     val allTasks: Flow<List<Task>> = taskDao.getAllTasks()
@@ -42,5 +43,27 @@ class TaskRepository(private val taskDao: TaskDao) {
 
     suspend fun skipTaskUntilTomorrow(taskId: String) {
         taskDao.setSkippedDate(taskId, System.currentTimeMillis())
+    }
+
+    /**
+     * Создаёт копию стандартного дела как пользовательское.
+     * Оригинальное стандартное дело помечается как неактивное.
+     * Копия наследует lastCompletedDate и lastSkippedDate от оригинала.
+     * @return ID новой копии или null, если оригинал не найден или не является стандартным.
+     */
+    suspend fun createCopyFromPredefined(originalTaskId: String): String? {
+        val original = taskDao.getTaskById(originalTaskId) ?: return null
+        if (!original.isPredefined) return null
+
+        val copyId = UUID.randomUUID().toString()
+        val copy = original.copy(
+            id = copyId,
+            isPredefined = false,
+            isActive = true
+            // lastCompletedDate и lastSkippedDate наследуются автоматически через copy()
+        )
+        taskDao.insertTask(copy)
+        taskDao.deactivateTask(originalTaskId)
+        return copyId
     }
 }

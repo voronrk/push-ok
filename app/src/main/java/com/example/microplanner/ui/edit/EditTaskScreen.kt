@@ -28,9 +28,10 @@ fun EditTaskScreen(
     var selectedPeriodicity by remember { mutableStateOf<Int?>(null) }
     var isLoaded by remember { mutableStateOf(false) }
 
+    // Надёжная загрузка данных через прямой запрос к БД
     LaunchedEffect(taskId) {
         if (taskId != null) {
-            val task = viewModel.allTasks.value.find { it.id == taskId }
+            val task = viewModel.getTaskById(taskId)
             if (task != null) {
                 title = task.title
                 selectedDuration = task.durationType
@@ -62,7 +63,12 @@ fun EditTaskScreen(
                     IconButton(
                         onClick = {
                             if (isFormValid) {
-                                viewModel.saveTask(taskId, title, selectedDuration!!, selectedPeriodicity!!)
+                                viewModel.saveTask(
+                                    taskId,
+                                    title,
+                                    selectedDuration!!,
+                                    selectedPeriodicity!!
+                                )
                                 onNavigateBack()
                             }
                         },

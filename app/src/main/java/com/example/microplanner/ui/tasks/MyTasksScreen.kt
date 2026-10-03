@@ -25,7 +25,13 @@ fun MyTasksScreen(
     onNavigateToEdit: (String?) -> Unit,
     viewModel: TasksViewModel = viewModel()
 ) {
-    val tasks by viewModel.allTasks.collectAsState()
+    val allTasks by viewModel.allTasks.collectAsState()
+
+    // Фильтруем: показываем все активные дела + неактивные пользовательские.
+    // Неактивные стандартные дела НЕ показываем.
+    val visibleTasks = allTasks.filter { task ->
+        task.isActive || !task.isPredefined
+    }
 
     Scaffold(
         topBar = {
@@ -44,19 +50,37 @@ fun MyTasksScreen(
             }
         }
     ) { paddingValues ->
-        if (tasks.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+        if (visibleTasks.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
                 Text("Список дел пуст. Добавьте новое!")
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(tasks, key = { it.id }) { task ->
+                items(visibleTasks, key = { it.id }) { task ->
                     TaskItem(
                         task = task,
-                        onEditClick = { onNavigateToEdit(task.id) },
+                        onEditClick = {
+                            if (task.isPredefined) {
+                                // Стандартное дело: создаём копию, затем редактируем копию
+                                viewModel.editPredefinedTask(task.id) { copyId ->
+                                    onNavigateToEdit(copyId)
+                                }
+                            } else {
+                                // Пользовательское дело: редактируем напрямую
+                                onNavigateToEdit(task.id)
+                            }
+                        },
                         onDeleteClick = { viewModel.deleteTask(task.id) }
                     )
                 }
@@ -72,10 +96,16 @@ fun TaskItem(task: Task, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f).alpha(itemAlpha)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .alpha(itemAlpha)
+            ) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyLarge,
@@ -88,11 +118,19 @@ fun TaskItem(task: Task, onEditClick: () -> Unit, onDeleteClick: () -> Unit) {
                 )
             }
             IconButton(onClick = onEditClick) {
-                Icon(Icons.Default.Edit, contentDescription = "Редактировать", tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Редактировать",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
             if (!task.isPredefined) {
                 IconButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
