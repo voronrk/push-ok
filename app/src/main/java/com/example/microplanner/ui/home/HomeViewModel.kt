@@ -25,13 +25,12 @@ sealed class TaskDisplayState {
 data class HomeUiState(
     val stats: AppStats = AppStats(),
     val taskDisplayState: TaskDisplayState = TaskDisplayState.Idle,
-    val abGroup: String = "A"
+    val abGroup: String = "A",
+    val showSkipDialog: Boolean = false
 )
 
-// Наследуемся от AndroidViewModel, чтобы получить Application Context
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Создаем репозитории прямо здесь, используя контекст приложения
     private val database = AppDatabase.getDatabase(application)
     private val taskRepository = TaskRepository(database.taskDao())
     private val statsRepository = StatsRepository(application)
@@ -44,7 +43,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             taskRepository.initializeDatabase()
             val group = statsRepository.getOrAssignABGroup()
             _uiState.update { it.copy(abGroup = group) }
-            
+
             viewModelScope.launch {
                 statsRepository.statsFlow.collect { stats ->
                     _uiState.update { it.copy(stats = stats) }
@@ -55,9 +54,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getRandomTask(durationType: DurationType) {
         viewModelScope.launch {
-            val task = taskRepository.getRandomAvailableTask(durationType.name, System.currentTimeMillis())
-            _uiState.update { 
-                it.copy(taskDisplayState = if (task != null) TaskDisplayState.ReadyToStart(task) else TaskDisplayState.Idle) 
+            val task = taskRepository.getRandomAvailableTask(
+                durationType.name,
+                System.currentTimeMillis()
+            )
+            _uiState.update {
+                it.copy(
+                    taskDisplayState = if (task != null) {
+                        TaskDisplayState.ReadyToStart(task)
+                    } else {
+                        TaskDisplayState.Idle
+                    }
+                )
             }
         }
     }
@@ -65,8 +73,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun startTask() {
         val currentState = _uiState.value.taskDisplayState
         if (currentState is TaskDisplayState.ReadyToStart) {
-            _uiState.update { 
-                it.copy(taskDisplayState = TaskDisplayState.InProgress(currentState.task, System.currentTimeMillis())) 
+            _uiState.update {
+                it.copy(
+                    taskDisplayState = TaskDisplayState.InProgress(
+                        currentState.task,
+                        System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -76,21 +89,58 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val currentState = _uiState.value.taskDisplayState
             if (currentState is TaskDisplayState.InProgress) {
                 val endTime = System.currentTimeMillis()
-                val minutesSpent = ((endTime - currentState.startTime) / 60000).toInt().coerceAtLeast(1)
-                
+                val minutesSpent = ((endTime - currentState.startTime) / 60000)
+                    .toInt()
+                    .coerceAtLeast(1)
+
                 val updatedTask = currentState.task.copy(lastCompletedDate = endTime)
                 taskRepository.updateTask(updatedTask)
                 statsRepository.incrementCompleted(minutesSpent)
-                
-                _uiState.update { it.copy(taskDisplayState = TaskDisplayState.Completed(minutesSpent)) }
+
+                _uiState.update {
+                    it.copy(taskDisplayState = TaskDisplayState.Completed(minutesSpent))
+                }
             }
         }
     }
 
-    fun skipTask() {
+    fun onSkipClicked() {
+        val currentState = _uiState.value.taskDisplayState
+        if (currentState is TaskDisplayState.ReadyToStart) {
+            if (currentState.task.periodicityDays == 0) {
+                // Дело "без ограничений" — показываем диалог
+                _uiState.update { it.copy(showSkipDialog = true) }
+            } else {
+                // Дело с периодичностью — сразу откладываем до завтра
+                performSkip(untilTomorrow = true)
+            }
+        }
+    }
+
+    fun skipNow() {
+        _uiState.update { it.copy(showSkipDialog = false) }
+        performSkip(untilTomorrow = false)
+    }
+
+    fun skipUntilTomorrow() {
+        _uiState.update { it.copy(showSkipDialog = false) }
+        performSkip(untilTomorrow = true)
+    }
+
+    fun dismissSkipDialog() {
+        _uiState.update { it.copy(showSkipDialog = false) }
+    }
+
+    private fun performSkip(untilTomorrow: Boolean) {
         viewModelScope.launch {
-            statsRepository.incrementSkipped()
-            _uiState.update { it.copy(taskDisplayState = TaskDisplayState.Idle) }
+            val currentState = _uiState.value.taskDisplayState
+            if (currentState is TaskDisplayState.ReadyToStart) {
+                if (untilTomorrow) {
+                    taskRepository.skipTaskUntilTomorrow(currentState.task.id)
+                }
+                statsRepository.incrementSkipped()
+                _uiState.update { it.copy(taskDisplayState = TaskDisplayState.Idle) }
+            }
         }
     }
 
@@ -104,7 +154,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun markAsIrrelevant() {
         viewModelScope.launch {
             val currentState = _uiState.value.taskDisplayState
-            
+
             val taskToDeactivate = when (currentState) {
                 is TaskDisplayState.ReadyToStart -> currentState.task
                 is TaskDisplayState.InProgress -> currentState.task

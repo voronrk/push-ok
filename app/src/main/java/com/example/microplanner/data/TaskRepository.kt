@@ -23,12 +23,11 @@ class TaskRepository(private val taskDao: TaskDao) {
     suspend fun deactivateTask(taskId: String) {
         taskDao.deactivateTask(taskId)
     }
-    
+
     suspend fun restorePredefinedTasks() {
         taskDao.restorePredefinedTasks()
     }
 
-    // Добавленные методы для корректной работы ViewModel
     suspend fun deleteTask(taskId: String) {
         taskDao.deleteTask(taskId)
     }
@@ -39,5 +38,9 @@ class TaskRepository(private val taskDao: TaskDao) {
 
     suspend fun insertTask(task: Task) {
         taskDao.insertTask(task)
+    }
+
+    suspend fun skipTaskUntilTomorrow(taskId: String) {
+        taskDao.setSkippedDate(taskId, System.currentTimeMillis())
     }
 }

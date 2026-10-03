@@ -72,7 +72,7 @@ fun HomeScreen(
                     StatsBlock(uiState.stats, uiState.abGroup, context)
                 }
                 is TaskDisplayState.ReadyToStart -> {
-                    TaskCardReady(state.task, viewModel, context, uiState.abGroup)
+                    TaskCardReady(state.task, viewModel)
                 }
                 is TaskDisplayState.InProgress -> {
                     TaskCardInProgress(state.task, viewModel)
@@ -82,6 +82,25 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // Диалог пропуска для дел "без ограничений"
+    if (uiState.showSkipDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissSkipDialog() },
+            title = { Text("Пропустить дело?") },
+            text = { Text("Как вы хотите поступить с этим делом?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.skipUntilTomorrow() }) {
+                    Text("Не предлагать до завтра")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.skipNow() }) {
+                    Text("Пропустить сейчас")
+                }
+            }
+        )
     }
 }
 
@@ -97,9 +116,9 @@ fun MainButtons(viewModel: HomeViewModel) {
             Text("до 15 минут", fontSize = 12.sp)
         }
     }
-    
+
     Spacer(modifier = Modifier.height(16.dp))
-    
+
     Button(
         onClick = { viewModel.getRandomTask(DurationType.MEDIUM) },
         modifier = Modifier.fillMaxWidth().height(64.dp),
@@ -115,7 +134,10 @@ fun MainButtons(viewModel: HomeViewModel) {
 
 @Composable
 fun StatsBlock(stats: AppStats, abGroup: String, context: Context) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Выполнено: ${stats.totalCompleted}", fontSize = 16.sp)
             Text("Пропущено: ${stats.totalSkipped}", fontSize = 16.sp)
@@ -126,7 +148,7 @@ fun StatsBlock(stats: AppStats, abGroup: String, context: Context) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             if (abGroup == "B") {
                 Spacer(modifier = Modifier.height(16.dp))
                 DonationLink(context, "https://example.com/donate-in-stats")
@@ -136,21 +158,41 @@ fun StatsBlock(stats: AppStats, abGroup: String, context: Context) {
 }
 
 @Composable
-fun TaskCardReady(task: Task, viewModel: HomeViewModel, context: Context, abGroup: String) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(task.title, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+fun TaskCardReady(task: Task, viewModel: HomeViewModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                task.title,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(onClick = { viewModel.startTask() }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+
+            Button(
+                onClick = { viewModel.startTask() },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
                 Text("Начать", fontSize = 18.sp)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            
-            TextButton(onClick = { viewModel.skipTask() }, modifier = Modifier.fillMaxWidth()) {
+
+            TextButton(
+                onClick = { viewModel.onSkipClicked() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Пропустить")
             }
-            TextButton(onClick = { viewModel.markAsIrrelevant() }, modifier = Modifier.fillMaxWidth()) {
+            TextButton(
+                onClick = { viewModel.markAsIrrelevant() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Неактуально", color = MaterialTheme.colorScheme.error)
             }
         }
@@ -159,22 +201,35 @@ fun TaskCardReady(task: Task, viewModel: HomeViewModel, context: Context, abGrou
 
 @Composable
 fun TaskCardInProgress(task: Task, viewModel: HomeViewModel) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(task.title, fontSize = 22.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                task.title,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             Button(
-                onClick = { viewModel.completeTask() }, 
+                onClick = { viewModel.completeTask() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 Text("Сделано", fontSize = 18.sp)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             OutlinedButton(
-                onClick = { viewModel.notDoneTask() }, 
+                onClick = { viewModel.notDoneTask() },
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
                 Text("Не сделано", fontSize = 18.sp, color = MaterialTheme.colorScheme.error)
@@ -184,20 +239,39 @@ fun TaskCardInProgress(task: Task, viewModel: HomeViewModel) {
 }
 
 @Composable
-fun TaskCardCompleted(minutesSpent: Int, viewModel: HomeViewModel, context: Context, abGroup: String) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Отличная работа!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+fun TaskCardCompleted(
+    minutesSpent: Int,
+    viewModel: HomeViewModel,
+    context: Context,
+    abGroup: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Отличная работа!",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text("Затрачено: $minutesSpent мин.", fontSize = 18.sp)
-            
+
             if (abGroup == "A") {
                 Spacer(modifier = Modifier.height(24.dp))
                 DonationLink(context, "https://example.com/donate-after-completion")
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = { viewModel.closeTaskCard() }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Button(
+                onClick = { viewModel.closeTaskCard() },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
                 Text("Закрыть", fontSize = 18.sp)
             }
         }
